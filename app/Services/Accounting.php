@@ -166,12 +166,12 @@ class Accounting
             'status' => TRUE,
             'data' => $data,
             'statistics' => [
-                'payments_for_the_week' => $payments_for_the_week,
-                'total_btc' => $total_btc,
-                'total_usdt' => $total_usdt,
-                'total_salaries' => $total_salaries,
-                'clouser_salary' => $clouser_salary,
-                'manager_salaries' => $manager_salaries
+                'payments_for_the_week' => (int) $payments_for_the_week,
+                'total_btc' => (int) $total_btc,
+                'total_usdt' => (int) $total_usdt,
+                'total_salaries' => (int) $total_salaries,
+                'clouser_salary' => (int) $clouser_salary,
+                'manager_salaries' => (int) $manager_salaries
             ]
         ];
     }
