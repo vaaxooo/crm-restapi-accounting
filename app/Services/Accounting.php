@@ -145,7 +145,7 @@ class Accounting
         }
 
 
-        $clouser_salary = $total_salaries * 10 / 100;
+
         $total_btc = Income::where('office_id', $office)
             ->where('payout_currency', 'BTC')
             ->whereDate('date', '>=', $request->start_date)
@@ -158,7 +158,7 @@ class Accounting
             ->sum('payout_sum');
 
         $payments_for_the_week = ($total_btc * $this->exchange_rates->USDUAH) + $total_usdt;
-
+        $clouser_salary = $payments_for_the_week * 10 / 100;
 
         return [
             'status' => TRUE,
