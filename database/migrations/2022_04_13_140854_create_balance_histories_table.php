@@ -19,7 +19,7 @@ return new class extends Migration
             $table->bigInteger('amount');
             $table->string('currency');
             $table->string('exchange_rate');
-            $table->timestamp('date');
+            $table->string('date');
             $table->timestamps();
         });
     }

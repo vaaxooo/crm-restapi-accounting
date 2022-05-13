@@ -54,28 +54,43 @@ class Accounting
             $expenses = Expense::where('office_id', $office->id)->whereDate('date', '>=', $request->start_date)->whereDate('date', '<=', $request->end_date)->get();
             $payouts = Payout::where('office_id', $office->id)->whereDate('date', '>=', $request->start_date)->whereDate('date', '<=', $request->end_date)->get();
             $total_payouts = 0;
-            foreach ($payouts as $key => $payout) {
-                if (strtoupper($payout->currency) == "BTC") {
-                    $total_payouts += $payout->amount * $payout->exchange_rate;
-                } else {
-                    $total_payouts += $payout->amount;
+
+            if (!empty($payouts)) {
+                foreach ($payouts as $key => $payout) {
+
+                    if (strtoupper($payout->currency) == "BTC") {
+                        $total_payouts += $payout->amount * $payout->exchange_rate;
+                    } else {
+                        $total_payouts += $payout->amount;
+                    }
                 }
             }
             $total_salaries = 0;
-            foreach ($incomes as $key => $manager) {
-                if ($manager->total_amount > 0) {
-                    $total_salaries += $manager->total_amount * $manager->percent / 100;
+            if (!empty($incomes)) {
+                foreach ($incomes as $key => $manager) {
+                    if ($manager->total_amount > 0) {
+                        $total_salaries += $manager->total_amount * $manager->percent / 100;
+                    }
                 }
             }
             $total_expenses = 0;
-            foreach ($expenses as $key => $expense) {
-                if (strtoupper($expense->currency) == 'BTC') {
-                    $total_expenses += $expense->amount * $this->exchange_rates->USDUAH;
-                } else {
-                    $total_expenses += $expense->amount;
+            if (!empty($expenses)) {
+                foreach ($expenses as $key => $expense) {
+                    if (strtoupper($expense->currency) == 'BTC') {
+                        $total_expenses += $expense->amount * $this->exchange_rates->USDUAH;
+                    } else {
+                        $total_expenses += $expense->amount;
+                    }
                 }
             }
+
             $balanceHistory = BalanceHistory::select('date', 'office_id', 'amount', 'exchange_rate', 'currency')->where('office_id', $office->id)->whereDate('created_at', '>=', $request->start_date)->whereDate('created_at', '<=', $request->end_date)->first();
+
+            $balance = 0;
+            if ($balanceHistory) {
+                $balance = $balanceHistory->amount * $balanceHistory->exchange_rate;
+            }
+
             $statistics = [
                 'total_incomes' => $incomes->sum('payout_sum'),
                 'total_payouts' => $total_payouts,
@@ -83,7 +98,7 @@ class Accounting
                 'total_expenses' => $total_expenses,
                 'total_expenses_plus_salaries' =>  $total_expenses + $total_salaries,
                 'accounting_income' => $total_payouts - ($total_expenses + $total_salaries),
-                'balance_history' => $balanceHistory->amount * $balanceHistory->exchange_rate
+                'balance_history' => $balance
             ];
             $office->statistics = $statistics;
         }
@@ -114,15 +129,50 @@ class Accounting
             ->whereDate('date', '<=', $request->end_date)
             ->groupBy('id')
             ->paginate(15);
+
+        $total_salaries = 0;
+        $clouser_salary = 0;
+        $manager_salaries = 0;
+
         foreach ($data as $key => $manager) {
             $manager->salary = 0;
             if ($manager->total_amount > 0) {
                 $manager->salary = $manager->total_amount * $manager->percent / 100;
             }
+            $total_salaries += $manager->salary;
+            if ($manager->id != 1) {
+                $manager_salaries += $manager->salary;
+            }
+            if ($manager->id == 1) {
+                $clouser_salary += $manager->salary;
+            }
         }
+
+        $total_btc = Income::where('office_id', $office)
+            ->where('payout_currency', 'BTC')
+            ->whereDate('date', '>=', $request->start_date)
+            ->whereDate('date', '<=', $request->end_date)
+            ->sum('payout_sum');
+        $total_usdt = Income::where('office_id', $office)
+            ->where('payout_currency', 'USDT')
+            ->whereDate('date', '>=', $request->start_date)
+            ->whereDate('date', '<=', $request->end_date)
+            ->sum('payout_sum');
+
+        $payments_for_the_week = ($total_btc * $this->exchange_rates->USDUAH) + $total_usdt;
+
+
         return [
             'status' => TRUE,
-            'data' => $data
+            'data' => $data,
+            'statistics' => [
+                'payments_for_the_week' => $payments_for_the_week,
+                'total_btc' => $total_btc,
+                'total_usdt' => $total_usdt,
+                'total_salaries' => $total_salaries,
+                'clouser_salary' => $clouser_salary,
+                'manager_salaries' => $manager_salaries
+            ]
         ];
     }
 
