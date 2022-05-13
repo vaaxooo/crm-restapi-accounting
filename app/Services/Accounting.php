@@ -131,7 +131,6 @@ class Accounting
             ->paginate(15);
 
         $total_salaries = 0;
-        $clouser_salary = 0;
         $manager_salaries = 0;
 
         foreach ($data as $key => $manager) {
@@ -143,11 +142,10 @@ class Accounting
             if ($manager->id != 1) {
                 $manager_salaries += $manager->salary;
             }
-            if ($manager->id == 1) {
-                $clouser_salary += $manager->salary;
-            }
         }
 
+
+        $clouser_salary = $total_salaries * 10 / 100;
         $total_btc = Income::where('office_id', $office)
             ->where('payout_currency', 'BTC')
             ->whereDate('date', '>=', $request->start_date)
